@@ -14,11 +14,13 @@
 		<p>No pets to show</p>
 		{/if}
 		<div>
-			<div>¯\_(ツ)_/¯</div>
-			<p>
-				Your data will show up here when you've configured everything
-				correctly
-			</p>
+			{#if pets && pets.length}
+			<pre>
+			{JSON.stringify(pets, null, 2)}
+  	  </pre>
+			{:else}
+			<p>Your data will show up here when you've configured everything correctly</p>
+			{/if}		
 		</div>
 	</main>
 </article>
