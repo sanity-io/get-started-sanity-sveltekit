@@ -12,7 +12,6 @@
   },
   "type": "module",
   "dependencies": {
-    "@sanity/client": "^3.3.0",
     "@sveltejs/adapter-node": "next",
     "@sveltejs/kit": "next",
     "eslint": "^7.32.0",
