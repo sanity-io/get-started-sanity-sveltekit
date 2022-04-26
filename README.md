@@ -1,6 +1,6 @@
 # Get started with Sanity and Sveltekit
 
-This project contains a minimal SvelteKit starter project to list pets on a page. 
+This project contains a minimal SvelteKit starter project to list pets on a page. It is used in the [Getting started with Sanity](https://www.sanity.io/docs/getting-started) guide.
 
 ## Set up
 
