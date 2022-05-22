@@ -1,5 +1,5 @@
 {
-  "name": "hello-sanity-sveltekit-starter",
+  "name": "emsbystyrk-frontend",
   "private": true,
   "version": "0.0.1",
   "scripts": {
@@ -12,6 +12,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@sanity/client": "^3.3.0",
     "@sveltejs/adapter-node": "next",
     "@sveltejs/kit": "next",
     "eslint": "^7.32.0",
