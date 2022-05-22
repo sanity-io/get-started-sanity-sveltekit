@@ -1147,7 +1147,8 @@ async function render_response({
 	let rendered;
 
 	let is_private = false;
-	let maxage;
+	/** @type {import('types').NormalizedLoadOutputCache | undefined} */
+	let cache;
 
 	if (error) {
 		error.stack = options.get_stack(error);
@@ -1163,9 +1164,8 @@ async function render_response({
 			if (fetched && page_config.hydrate) serialized_data.push(...fetched);
 			if (props) shadow_props = props;
 
-			if (uses_credentials) is_private = true;
-
-			maxage = loaded.maxage;
+			cache = loaded?.cache;
+			is_private = cache?.private ?? uses_credentials;
 		});
 
 		const session = writable($session);
@@ -1179,7 +1179,7 @@ async function render_response({
 				session: {
 					...session,
 					subscribe: (fn) => {
-						is_private = true;
+						is_private = cache?.private ?? true;
 						return session.subscribe(fn);
 					}
 				},
@@ -1242,7 +1242,7 @@ async function render_response({
 	const init_app = `
 		import { start } from ${s(options.prefix + options.manifest._.entry.file)};
 		start({
-			target: document.querySelector('[data-hydrate="${target}"]').parentNode,
+			target: document.querySelector('[data-sveltekit-hydrate="${target}"]').parentNode,
 			paths: ${s(options.paths)},
 			session: ${try_serialize($session, (error) => {
 				throw new Error(`Failed to serialize session data: ${error.message}`);
@@ -1266,99 +1266,82 @@ async function render_response({
 
 	const init_service_worker = `
 		if ('serviceWorker' in navigator) {
-			navigator.serviceWorker.register('${options.service_worker}');
+			addEventListener('load', () => {
+				navigator.serviceWorker.register('${options.service_worker}');
+			});
 		}
 	`;
 
-	if (options.amp) {
-		// inline_style contains CSS files (i.e. `import './styles.css'`)
-		// rendered.css contains the CSS from `<style>` tags in Svelte components
-		const styles = `${inlined_style}\n${rendered.css.code}`;
-		head += `
-		<style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-moz-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-ms-animation:-amp-start 8s steps(1,end) 0s 1 normal both;animation:-amp-start 8s steps(1,end) 0s 1 normal both}@-webkit-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-moz-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-ms-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-o-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}</style>
-		<noscript><style amp-boilerplate>body{-webkit-animation:none;-moz-animation:none;-ms-animation:none;animation:none}</style></noscript>
-		<script async src="https://cdn.ampproject.org/v0.js"></script>
+	if (inlined_style) {
+		const attributes = [];
+		if (options.dev) attributes.push(' data-sveltekit');
+		if (csp.style_needs_nonce) attributes.push(` nonce="${csp.nonce}"`);
 
-		<style amp-custom>${styles}</style>`;
+		csp.add_style(inlined_style);
 
-		if (options.service_worker) {
-			head +=
-				'<script async custom-element="amp-install-serviceworker" src="https://cdn.ampproject.org/v0/amp-install-serviceworker-0.1.js"></script>';
+		head += `\n\t<style${attributes.join('')}>${inlined_style}</style>`;
+	}
 
-			body += `<amp-install-serviceworker src="${options.service_worker}" layout="nodisplay"></amp-install-serviceworker>`;
-		}
-	} else {
-		if (inlined_style) {
-			const attributes = [];
-			if (options.dev) attributes.push(' data-sveltekit');
-			if (csp.style_needs_nonce) attributes.push(` nonce="${csp.nonce}"`);
+	// prettier-ignore
+	head += Array.from(stylesheets)
+		.map((dep) => {
+			const attributes = [
+				'rel="stylesheet"',
+				`href="${options.prefix + dep}"`
+			];
 
-			csp.add_style(inlined_style);
-
-			head += `\n\t<style${attributes.join('')}>${inlined_style}</style>`;
-		}
-
-		// prettier-ignore
-		head += Array.from(stylesheets)
-			.map((dep) => {
-				const attributes = [
-					'rel="stylesheet"',
-					`href="${options.prefix + dep}"`
-				];
-
-				if (csp.style_needs_nonce) {
-					attributes.push(`nonce="${csp.nonce}"`);
-				}
-
-				if (styles.has(dep)) {
-					// don't load stylesheets that are already inlined
-					// include them in disabled state so that Vite can detect them and doesn't try to add them
-					attributes.push('disabled', 'media="(max-width: 0)"');
-				}
-
-				return `\n\t<link ${attributes.join(' ')}>`;
-			})
-			.join('');
-
-		if (page_config.router || page_config.hydrate) {
-			head += Array.from(modulepreloads)
-				.map((dep) => `\n\t<link rel="modulepreload" href="${options.prefix + dep}">`)
-				.join('');
-
-			const attributes = ['type="module"', `data-hydrate="${target}"`];
-
-			csp.add_script(init_app);
-
-			if (csp.script_needs_nonce) {
+			if (csp.style_needs_nonce) {
 				attributes.push(`nonce="${csp.nonce}"`);
 			}
 
-			body += `\n\t\t<script ${attributes.join(' ')}>${init_app}</script>`;
-
-			body += serialized_data
-				.map(({ url, body, response }) =>
-					render_json_payload_script(
-						{ type: 'data', url, body: typeof body === 'string' ? hash(body) : undefined },
-						response
-					)
-				)
-				.join('\n\t');
-
-			if (shadow_props) {
-				body += render_json_payload_script({ type: 'props' }, shadow_props);
+			if (styles.has(dep)) {
+				// don't load stylesheets that are already inlined
+				// include them in disabled state so that Vite can detect them and doesn't try to add them
+				attributes.push('disabled', 'media="(max-width: 0)"');
 			}
+
+			return `\n\t<link ${attributes.join(' ')}>`;
+		})
+		.join('');
+
+	if (page_config.router || page_config.hydrate) {
+		head += Array.from(modulepreloads)
+			.map((dep) => `\n\t<link rel="modulepreload" href="${options.prefix + dep}">`)
+			.join('');
+
+		const attributes = ['type="module"', `data-sveltekit-hydrate="${target}"`];
+
+		csp.add_script(init_app);
+
+		if (csp.script_needs_nonce) {
+			attributes.push(`nonce="${csp.nonce}"`);
 		}
 
-		if (options.service_worker) {
-			// always include service worker unless it's turned off explicitly
-			csp.add_script(init_service_worker);
+		body += `\n\t\t<script ${attributes.join(' ')}>${init_app}</script>`;
 
-			head += `
-				<script${csp.script_needs_nonce ? ` nonce="${csp.nonce}"` : ''}>${init_service_worker}</script>`;
+		body += serialized_data
+			.map(({ url, body, response }) =>
+				render_json_payload_script(
+					{ type: 'data', url, body: typeof body === 'string' ? hash(body) : undefined },
+					response
+				)
+			)
+			.join('\n\t');
+
+		if (shadow_props) {
+			body += render_json_payload_script({ type: 'props' }, shadow_props);
 		}
 	}
 
-	if (state.prerender && !options.amp) {
+	if (options.service_worker) {
+		// always include service worker unless it's turned off explicitly
+		csp.add_script(init_service_worker);
+
+		head += `
+			<script${csp.script_needs_nonce ? ` nonce="${csp.nonce}"` : ''}>${init_service_worker}</script>`;
+	}
+
+	if (state.prerender) {
 		const http_equiv = [];
 
 		const csp_headers = csp.get_meta();
@@ -1366,8 +1349,8 @@ async function render_response({
 			http_equiv.push(csp_headers);
 		}
 
-		if (maxage) {
-			http_equiv.push(`<meta http-equiv="cache-control" content="max-age=${maxage}">`);
+		if (cache) {
+			http_equiv.push(`<meta http-equiv="cache-control" content="max-age=${cache.maxage}">`);
 		}
 
 		if (http_equiv.length > 0) {
@@ -1388,8 +1371,8 @@ async function render_response({
 		etag: `"${hash(html)}"`
 	});
 
-	if (maxage) {
-		headers.set('cache-control', `${is_private ? 'private' : 'public'}, max-age=${maxage}`);
+	if (cache) {
+		headers.set('cache-control', `${is_private ? 'private' : 'public'}, max-age=${cache.maxage}`);
 	}
 
 	if (!options.floc) {
@@ -1915,6 +1898,19 @@ var splitCookiesString_1 = setCookie.exports.splitCookiesString = splitCookiesSt
  * @returns {import('types').NormalizedLoadOutput}
  */
 function normalize(loaded) {
+	// TODO remove for 1.0
+	// @ts-expect-error
+	if (loaded.fallthrough) {
+		throw new Error(
+			'fallthrough is no longer supported. Use matchers instead: https://kit.svelte.dev/docs/routing#advanced-routing-matching'
+		);
+	}
+
+	// TODO remove for 1.0
+	if ('maxage' in loaded) {
+		throw new Error('maxage should be replaced with cache: { maxage }');
+	}
+
 	const has_error_status =
 		loaded.status && loaded.status >= 400 && loaded.status <= 599 && !loaded.redirect;
 	if (loaded.error || has_error_status) {
@@ -2032,7 +2028,7 @@ function normalize_path(path, trailing_slash) {
 
 	if (trailing_slash === 'never') {
 		return path.endsWith('/') ? path.slice(0, -1) : path;
-	} else if (trailing_slash === 'always' && /\/[^./]+$/.test(path)) {
+	} else if (trailing_slash === 'always' && !path.endsWith('/')) {
 		return path + '/';
 	}
 
@@ -2411,14 +2407,6 @@ async function load_node({
 			// TODO do we still want to enforce this now that there's no fallthrough?
 			throw new Error(`load function must return a value${options.dev ? ` (${node.entry})` : ''}`);
 		}
-
-		// TODO remove for 1.0
-		// @ts-expect-error
-		if (loaded.fallthrough) {
-			throw new Error(
-				'fallthrough is no longer supported. Use matchers instead: https://kit.svelte.dev/docs/routing#advanced-routing-matching'
-			);
-		}
 	} else if (shadow.body) {
 		loaded = {
 			props: shadow.body
@@ -2787,7 +2775,7 @@ async function respond$1(opts) {
 
 	let stuff = {};
 
-	ssr: if (resolve_opts.ssr) {
+	ssr: {
 		for (let i = 0; i < nodes.length; i += 1) {
 			const node = nodes[i];
 
@@ -3093,20 +3081,6 @@ const default_transform = ({ html }) => html;
 async function respond(request, options, state) {
 	let url = new URL(request.url);
 
-	const normalized = normalize_path(url.pathname, options.trailing_slash);
-
-	if (normalized !== url.pathname && !state.prerender?.fallback) {
-		return new Response(undefined, {
-			status: 301,
-			headers: {
-				location:
-					// ensure paths starting with '//' are not treated as protocol-relative
-					(normalized.startsWith('//') ? url.origin + normalized : normalized) +
-					(url.search === '?' ? '' : url.search)
-			}
-		});
-	}
-
 	const { parameter, allowed } = options.method_override;
 	const method_override = url.searchParams.get(parameter)?.toUpperCase();
 
@@ -3151,13 +3125,7 @@ async function respond(request, options, state) {
 
 	if (is_data_request) {
 		decoded = decoded.slice(0, -DATA_SUFFIX.length) || '/';
-
-		const normalized = normalize_path(
-			url.pathname.slice(0, -DATA_SUFFIX.length),
-			options.trailing_slash
-		);
-
-		url = new URL(url.origin + normalized + url.search);
+		url = new URL(url.origin + url.pathname.slice(0, -DATA_SUFFIX.length) + url.search);
 	}
 
 	if (!state.prerender || !state.prerender.fallback) {
@@ -3173,6 +3141,23 @@ async function respond(request, options, state) {
 				params = decode_params(matched);
 				break;
 			}
+		}
+	}
+
+	if (route?.type === 'page') {
+		const normalized = normalize_path(url.pathname, options.trailing_slash);
+
+		if (normalized !== url.pathname && !state.prerender?.fallback) {
+			return new Response(undefined, {
+				status: 301,
+				headers: {
+					'x-sveltekit-normalize': '1',
+					location:
+						// ensure paths starting with '//' are not treated as protocol-relative
+						(normalized.startsWith('//') ? url.origin + normalized : normalized) +
+						(url.search === '?' ? '' : url.search)
+				}
+			});
 		}
 	}
 

@@ -21,6 +21,19 @@ function coalesce_to_error(err) {
  * @returns {import('types').NormalizedLoadOutput}
  */
 function normalize(loaded) {
+	// TODO remove for 1.0
+	// @ts-expect-error
+	if (loaded.fallthrough) {
+		throw new Error(
+			'fallthrough is no longer supported. Use matchers instead: https://kit.svelte.dev/docs/routing#advanced-routing-matching'
+		);
+	}
+
+	// TODO remove for 1.0
+	if ('maxage' in loaded) {
+		throw new Error('maxage should be replaced with cache: { maxage }');
+	}
+
 	const has_error_status =
 		loaded.status && loaded.status >= 400 && loaded.status <= 599 && !loaded.redirect;
 	if (loaded.error || has_error_status) {
@@ -99,7 +112,7 @@ function normalize_path(path, trailing_slash) {
 
 	if (trailing_slash === 'never') {
 		return path.endsWith('/') ? path.slice(0, -1) : path;
-	} else if (trailing_slash === 'always' && /\/[^./]+$/.test(path)) {
+	} else if (trailing_slash === 'always' && !path.endsWith('/')) {
 		return path + '/';
 	}
 
@@ -419,6 +432,33 @@ function update_scroll_positions(index) {
 	scroll_positions[index] = scroll_state();
 }
 
+const fetch$1 = window.fetch;
+let loading = 0;
+
+if (import.meta.env.DEV) {
+	let can_inspect_stack_trace = false;
+
+	const check_stack_trace = async () => {
+		const stack = /** @type {string} */ (new Error().stack);
+		can_inspect_stack_trace = stack.includes('check_stack_trace');
+	};
+
+	check_stack_trace();
+
+	window.fetch = (input, init) => {
+		const url = input instanceof Request ? input.url : input.toString();
+		const stack = /** @type {string} */ (new Error().stack);
+
+		const heuristic = can_inspect_stack_trace ? stack.includes('load_node') : loading;
+		if (heuristic) {
+			console.warn(
+				`Loading ${url} using \`window.fetch\`. For best results, use the \`fetch\` that is passed to your \`load\` function: https://kit.svelte.dev/docs/loading#input-fetch`
+			);
+		}
+		return fetch$1(input, init);
+	};
+}
+
 /**
  * @param {{
  *   target: Element;
@@ -670,7 +710,7 @@ function create_client({ target, session, base, trailing_slash }) {
 
 				getSelection()?.removeAllRanges();
 				root.tabIndex = -1;
-				root.focus();
+				root.focus({ preventScroll: true });
 
 				// restore `tabindex` as to prevent `root` from stealing input from elements
 				if (tabindex !== null) {
@@ -812,9 +852,9 @@ function create_client({ target, session, base, trailing_slash }) {
 		}
 
 		const leaf = filtered[filtered.length - 1];
-		const maxage = leaf.loaded && leaf.loaded.maxage;
+		const load_cache = leaf?.loaded?.cache;
 
-		if (maxage) {
+		if (load_cache) {
 			const key = url.pathname + url.search; // omit hash
 			let ready = false;
 
@@ -827,7 +867,7 @@ function create_client({ target, session, base, trailing_slash }) {
 				clearTimeout(timeout);
 			};
 
-			const timeout = setTimeout(clear, maxage * 1000);
+			const timeout = setTimeout(clear, load_cache.maxage * 1000);
 
 			const unsubscribe = stores.session.subscribe(() => {
 				if (ready) clear();
@@ -901,7 +941,18 @@ function create_client({ target, session, base, trailing_slash }) {
 				props: props || {},
 				get url() {
 					node.uses.url = true;
-					return url;
+
+					return new Proxy(url, {
+						get: (target, property) => {
+							if (property === 'hash') {
+								throw new Error(
+									'url.hash is inaccessible from load. Consider accessing hash from the page store within the script tag of your component.'
+								);
+							}
+
+							return Reflect.get(target, property, target);
+						}
+					});
 				},
 				get session() {
 					node.uses.session = true;
@@ -915,7 +966,7 @@ function create_client({ target, session, base, trailing_slash }) {
 					const requested = typeof resource === 'string' ? resource : resource.url;
 					add_dependency(requested);
 
-					return started ? fetch(resource, info) : initial_fetch(resource, info);
+					return started ? fetch$1(resource, info) : initial_fetch(resource, info);
 				},
 				status: status ?? null,
 				error: error ?? null
@@ -930,7 +981,18 @@ function create_client({ target, session, base, trailing_slash }) {
 				});
 			}
 
-			const loaded = await module.load.call(null, load_input);
+			let loaded;
+
+			if (import.meta.env.DEV) {
+				try {
+					loading += 1;
+					loaded = await module.load.call(null, load_input);
+				} finally {
+					loading -= 1;
+				}
+			} else {
+				loaded = await module.load.call(null, load_input);
+			}
 
 			if (!loaded) {
 				throw new Error('load function must return a value');
@@ -983,8 +1045,10 @@ function create_client({ target, session, base, trailing_slash }) {
 		/** @type {Error | null} */
 		let error = null;
 
-		// preload modules
-		a.forEach((loader) => loader());
+		// preload modules to avoid waterfall, but handle rejections
+		// so they don't get reported to Sentry et al (we don't need
+		// to act on the failures at this point)
+		a.forEach((loader) => loader().catch(() => {}));
 
 		load: for (let i = 0; i < a.length; i += 1) {
 			/** @type {import('./types').BranchNode | undefined} */
@@ -1012,7 +1076,7 @@ function create_client({ target, session, base, trailing_slash }) {
 					const is_shadow_page = has_shadow && i === a.length - 1;
 
 					if (is_shadow_page) {
-						const res = await fetch(
+						const res = await fetch$1(
 							`${url.pathname}${url.pathname.endsWith('/') ? '' : '/'}__data.json${url.search}`,
 							{
 								headers: {
@@ -1056,14 +1120,6 @@ function create_client({ target, session, base, trailing_slash }) {
 						}
 
 						if (node.loaded) {
-							// TODO remove for 1.0
-							// @ts-expect-error
-							if (node.loaded.fallthrough) {
-								throw new Error(
-									'fallthrough is no longer supported. Use matchers instead: https://kit.svelte.dev/docs/routing#advanced-routing-matching'
-								);
-							}
-
 							if (node.loaded.error) {
 								status = node.loaded.status;
 								error = node.loaded.error;
