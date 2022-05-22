@@ -1,6 +1,6 @@
 <article>
 	<header>
-		<h1>EMS by Styrk</h1>
+		<h1>- EMS by Styrk -</h1>
 	</header>
 	<main>
 		<h1>Mere information kommer snart!</h1>
