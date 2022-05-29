@@ -4,7 +4,7 @@ import { respond } from '/Users/frksteenhoff/Documents/Github/emsbystyrk-fronten
 import { set_paths, assets, base } from '/Users/frksteenhoff/Documents/Github/emsbystyrk-frontend/.svelte-kit/runtime/paths.js';
 import { set_prerendering } from '/Users/frksteenhoff/Documents/Github/emsbystyrk-frontend/.svelte-kit/runtime/env.js';
 
-const template = ({ head, body, assets, nonce }) => "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n  <head>\r\n    <meta charset=\"utf-8\" />\r\n    <meta name=\"description\" content=\"\" />\r\n    <link rel=\"icon\" href=\"" + assets + "/favicon.png\" />\r\n    <link rel=\"stylesheet\" href=\"" + assets + "/styles.css\" />\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\r\n    " + head + "\r\n  </head>\r\n  <body>\r\n    <div>" + body + "</div>\r\n  </body>\r\n</html>\r\n";
+const template = ({ head, body, assets, nonce }) => "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n  <head>\r\n    <meta charset=\"utf-8\" />\r\n    <meta name=\"description\" content=\"\" />\r\n    <link rel=\"icon\" href=\"" + assets + "/favicon-16x16.png\" />\r\n    <link rel=\"stylesheet\" href=\"" + assets + "/styles.css\" />\r\n\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\r\n\t<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor\" crossorigin=\"anonymous\">\r\n</head>\r\n    " + head + "\r\n  </head>\r\n  <body>\r\n\t<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2\" crossorigin=\"anonymous\"></script>\r\n    <div>" + body + "</div>\r\n  </body>\r\n</html>\r\n";
 
 let read = null;
 
@@ -24,7 +24,6 @@ export function override(settings) {
 export class Server {
 	constructor(manifest) {
 		this.options = {
-			amp: false,
 			csp: {"mode":"auto","directives":{"upgrade-insecure-requests":false,"block-all-mixed-content":false}},
 			dev: false,
 			floc: false,
@@ -47,8 +46,11 @@ export class Server {
 			manifest,
 			method_override: {"parameter":"_method","allowed":[]},
 			paths: { base, assets },
-			prefix: assets + '/_app/',
-			prerender: true,
+			prefix: assets + '/_app/immutable/',
+			prerender: {
+				default: false,
+				enabled: true
+			},
 			read,
 			root,
 			service_worker: null,

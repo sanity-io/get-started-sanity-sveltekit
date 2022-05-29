@@ -9,13 +9,13 @@
   });
 
   export async function get() {
-	const data = await client.fetch(`*[_type == "forloeb"]`);
+	const data = await client.fetch(`*[_type == "sektionstekst"]`);
 
 	if (data) {
 		return {
 		status: 200,
 		body: {
-			forloeb: data
+			sektionstekst: data
 		}
 		};
 	}

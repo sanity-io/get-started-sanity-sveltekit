@@ -4,7 +4,7 @@
     "src": ".svelte-kit/build/index.js",
     "isEntry": true,
     "imports": [
-      "_index-7daec0e0.js"
+      "_index-00e51b25.js"
     ],
     "dynamicImports": [
       ".svelte-kit/build/hooks.js"
@@ -15,20 +15,36 @@
     "src": "src/routes/index.js",
     "isEntry": true
   },
-  ".svelte-kit/runtime/components/layout.svelte": {
-    "file": "entries/fallbacks/layout.svelte.js",
-    "src": ".svelte-kit/runtime/components/layout.svelte",
+  "src/routes/__layout.svelte": {
+    "file": "entries/pages/__layout.svelte.js",
+    "src": "src/routes/__layout.svelte",
     "isEntry": true,
     "imports": [
-      "_index-7daec0e0.js"
+      "_index-00e51b25.js"
     ]
   },
-  ".svelte-kit/runtime/components/error.svelte": {
-    "file": "entries/fallbacks/error.svelte.js",
-    "src": ".svelte-kit/runtime/components/error.svelte",
+  "src/routes/__error.svelte": {
+    "file": "entries/pages/__error.svelte.js",
+    "src": "src/routes/__error.svelte",
     "isEntry": true,
     "imports": [
-      "_index-7daec0e0.js"
+      "_index-00e51b25.js"
+    ]
+  },
+  "src/routes/dine-traenere/index.svelte": {
+    "file": "entries/pages/dine-traenere/index.svelte.js",
+    "src": "src/routes/dine-traenere/index.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index-00e51b25.js"
+    ]
+  },
+  "src/routes/hvorfor-ems/index.svelte": {
+    "file": "entries/pages/hvorfor-ems/index.svelte.js",
+    "src": "src/routes/hvorfor-ems/index.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index-00e51b25.js"
     ]
   },
   "src/routes/index.svelte": {
@@ -36,11 +52,30 @@
     "src": "src/routes/index.svelte",
     "isEntry": true,
     "imports": [
-      "_index-7daec0e0.js"
+      "_index-00e51b25.js",
+      "_Section-6c2d9a37.js"
     ]
   },
-  "_index-7daec0e0.js": {
-    "file": "chunks/index-7daec0e0.js"
+  "src/routes/kontakt/index.svelte": {
+    "file": "entries/pages/kontakt/index.svelte.js",
+    "src": "src/routes/kontakt/index.svelte",
+    "isEntry": true,
+    "imports": [
+      "_index-00e51b25.js",
+      "_Section-6c2d9a37.js"
+    ]
+  },
+  "_index-00e51b25.js": {
+    "file": "chunks/index-00e51b25.js"
+  },
+  "_Section-6c2d9a37.js": {
+    "file": "chunks/Section-6c2d9a37.js",
+    "imports": [
+      "_index-00e51b25.js"
+    ],
+    "css": [
+      "assets/Section-884f58d5.css"
+    ]
   },
   ".svelte-kit/build/hooks.js": {
     "file": "chunks/hooks-1c45ba0b.js",
