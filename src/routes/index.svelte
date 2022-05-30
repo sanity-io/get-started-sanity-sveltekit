@@ -11,6 +11,7 @@
 		  } 
 	];*/
 	import Section from '../components/Section.svelte'
+	import {PortableText} from '@portabletext/svelte'
   </script>
 
 <div>
@@ -19,19 +20,19 @@
 	</sveltekit:head>
 
 	<Section name='Velkommen til EMS by STYRK' backgroundColor={"dark"} showName={true} centerText={true}>
-		<div class="container">
+		<div class="container mt-4">
 			<div class="row">
-				<div class="column"></div>
-				<div class="column">
-					<img src={"src/img/laura.jpg"} class="img-fade-in" alt="EMS træning">
+				<div class="col"></div>
+				<div class="col-12 col-lg-6">
+					<img src={"src/img/nanna_box.jpg"} class="img-fluid img-fade-in" alt="EMS træning">
 				</div>
-				<div class="column"></div>
+				<div class="col"></div>
 			</div>
 		</div>
 	</Section>
 
 	<Section name={EMSInfo[0].name} backgroundColor={"light"} showName={true}>
-		{JSON.stringify(EMSInfo[0].text)}
+		<!--{JSON.stringify(EMSInfo[0])}-->
 
 		<p>EMS står for Elektronisk Muskel-Stimulering, hvilket indebærer at elektroder stimulerer og aktiverer dine muskelgrupper. Dette gør det muligt at træne hele kroppen på samme tid og gennemføre en træningssession på bare 20 min. 1 EMS-træningssession på 20 min svarer til 90 min intensiv HIT træning, da elektroderne gør det muligt at øge intensiteten med op til 80%.</p>
 
@@ -48,6 +49,12 @@
 			<li>Tidsbesparing (kun 20 min træning)</li>
 			<li>Personlig træning og skræddersyet program</li>
 		</ul>
+		
+	</Section>
+
+	<Section name={"Hvorfor vælge EMS by STYRK?"} backgroundColor={"dark"} showName={true}>
+		<!--{JSON.stringify(EMSInfo[0])}-->
+		<p>Hos EMS by STYRK er klienten i fokus. Ved første konsultation vil dine ønsker og nuværende standpunkt blive gennemgået, så vi kan tilrettelægge træningen mod dine mål. For os skal træning være sjovt og ikke noget, der bare skal overstås. Kom godt i gang med et træningsforløb og mærk på din egen krop, hvordan EMS kan give glæde til træning og gode resultater på krop og sjæl.</p>
 		
 	</Section>
 </div>

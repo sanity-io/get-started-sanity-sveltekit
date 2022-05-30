@@ -18,7 +18,7 @@
 
 <style>
 	.container {
-		min-height: 500px;
+		min-height: 200px;
 	}
 	.center-text {
 		text-align: center;
