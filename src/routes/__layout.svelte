@@ -8,6 +8,7 @@
 		<div class="navbar-nav">
 			<a class="nav-link disabled" href="hvorfor-ems">Hvorfor EMS?</a>
 		  <a class="nav-link" href="/dine-traenere">Dine trænere</a>
+		  <a class="nav-link disabled" href="/forloeb">Forløb</a>
 		  <a class="nav-link disabled" href="/kontakt">Kontakt</a>
 		</div>
 	  </div>
