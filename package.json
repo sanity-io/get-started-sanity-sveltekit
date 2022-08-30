@@ -3,11 +3,11 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "dev": "svelte-kit dev",
-    "start": "svelte-kit dev",
-    "build": "svelte-kit build",
-    "package": "svelte-kit package",
-    "preview": "svelte-kit preview",
+    "dev": "vite dev",
+    "start": "vite dev",
+    "build": "vite build",
+    "package": "svelte-package",
+    "preview": "vite preview",
     "prepare": "svelte-kit sync"
   },
   "type": "module",
@@ -20,5 +20,9 @@
     "svelte": "^3.46.0"
   },
   "keywords": [],
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "@sveltejs/package": "^1.0.0-next.3",
+    "svelte-preprocess": "^4.10.7"
+  }
 }
