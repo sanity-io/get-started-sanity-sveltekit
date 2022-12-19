@@ -1,24 +1,38 @@
-# Get started with Sanity and Sveltekit
+# create-svelte
 
-This project contains a minimal SvelteKit starter project to list pets on a page. It is used in the [Getting started with Sanity](https://www.sanity.io/docs/getting-started) guide.
+Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
 
-## Set up
+## Creating a project
 
-To set up this project locally, you will need to have [Node](https://nodejs.org/en/) installed, then run:
+If you're seeing this, you've probably already done this step. Congrats!
 
 ```bash
-npm install
-``` 
+# create a new project in the current directory
+npm create svelte@latest
 
-After that, your dependencies are installed and you can start a development server: 
+# create a new project in my-app
+npm create svelte@latest my-app
+```
+
+## Developing
+
+Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
 
 ```bash
 npm run dev
+
+# or start the server and open the app in a new browser tab
+npm run dev -- --open
 ```
 
-## Connect your content
+## Building
 
-To learn more about connecting your data to this starter project: 
+To create a production version of your app:
 
-- [Getting started with Sanity](https://www.sanity.io/docs/getting-started)
-- [Connect your content with SvelteKit](https://www.sanity.io/docs/connect-your-content-to-sveltekit)
+```bash
+npm run build
+```
+
+You can preview the production build with `npm run preview`.
+
+> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
